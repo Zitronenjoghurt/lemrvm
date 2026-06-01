@@ -1,0 +1,9 @@
+[workspace]
+resolver = "3"
+members = ["core"]
+
+[workspace.package]
+authors = ["Zitronenjoghurt <117850085+zitronenjoghurt@users.noreply.github.com>"]
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/Zitronenjoghurt/lemrvm"
