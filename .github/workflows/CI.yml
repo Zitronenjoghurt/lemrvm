@@ -17,7 +17,7 @@ jobs:
       - name: Install RISC-V toolchain & build deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y autoconf automake gcc-riscv64-unknown-elf libnewlib-riscv64-unknown-elf
+          sudo apt-get install -y autoconf automake gcc-riscv64-unknown-elf
 
       - name: Build RISC-V test binaries
         run: make build-tests
