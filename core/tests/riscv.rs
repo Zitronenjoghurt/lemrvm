@@ -22,20 +22,30 @@ impl TestBus {
 }
 
 impl Bus for TestBus {
-    fn read(&self, addr: u32) -> u32 {
-        let bytes = [
-            *self.mem.get(&addr).unwrap_or(&0),
-            *self.mem.get(&(addr + 1)).unwrap_or(&0),
-            *self.mem.get(&(addr + 2)).unwrap_or(&0),
-            *self.mem.get(&(addr + 3)).unwrap_or(&0),
-        ];
-        u32::from_le_bytes(bytes)
+    fn read8(&self, addr: u32) -> u8 {
+        self.mem.get(&addr).copied().unwrap_or(0)
     }
 
-    fn write(&mut self, addr: u32, value: u32) {
-        for (i, byte) in value.to_le_bytes().iter().enumerate() {
-            self.mem.insert(addr + i as u32, *byte);
-        }
+    fn read16(&self, addr: u32) -> u16 {
+        (self.read8(addr) as u16) | ((self.read8(addr + 1) as u16) << 8)
+    }
+
+    fn read32(&self, addr: u32) -> u32 {
+        (self.read16(addr) as u32) | ((self.read16(addr + 2) as u32) << 16)
+    }
+
+    fn write8(&mut self, addr: u32, val: u8) {
+        self.mem.insert(addr, val);
+    }
+
+    fn write16(&mut self, addr: u32, val: u16) {
+        self.write8(addr, val as u8);
+        self.write8(addr + 1, (val >> 8) as u8);
+    }
+
+    fn write32(&mut self, addr: u32, val: u32) {
+        self.write16(addr, val as u16);
+        self.write16(addr + 2, (val >> 16) as u16);
     }
 }
 
@@ -52,16 +62,29 @@ fn riscv_test(path: &Path) -> datatest_stable::Result<()> {
         }
     }
 
+    let tohost_addr = elf
+        .syms
+        .iter()
+        .find(|sym| elf.strtab.get_at(sym.st_name) == Some("tohost"))
+        .map(|sym| sym.st_value as u32)
+        .expect("tohost symbol not found");
+
     let mut hart = Hart::default();
     hart.set_pc(elf.entry as u32);
 
     loop {
-        let instr = bus.read(hart.pc());
-        if instr == 0x00000073 {
+        hart.step(&mut bus);
+        let tohost = bus.read32(tohost_addr);
+        if tohost != 0 {
             break;
         }
-        hart.step(&mut bus);
     }
+    assert_eq!(
+        bus.read32(tohost_addr),
+        1,
+        "failed at test case {}",
+        bus.read32(tohost_addr) >> 1
+    );
 
     let gp = hart.reg(3);
     assert_eq!(gp, 1, "failed at test case {}", gp >> 1);

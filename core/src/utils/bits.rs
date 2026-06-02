@@ -22,7 +22,7 @@ macro_rules! sext {
 #[macro_export]
 macro_rules! ibits {
     ($val:expr, $hi:literal : $lo:literal) => {
-        $crate::sext!(ubits!($val, $hi:$lo), $hi - $lo + 1)
+        $crate::sext!($crate::ubits!($val, $hi:$lo), $hi - $lo + 1)
     };
 }
 

@@ -1,4 +1,4 @@
-PREFIXES ?= rv32ui-p
+PREFIXES ?= rv32ui-p #rv32mi-p
 
 .PHONY: build-tests
 
